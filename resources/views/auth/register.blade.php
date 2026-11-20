@@ -5,9 +5,8 @@
 @section('content')
 <div class="login-screen">
     <div class="login-brand">
-        <div class="house-sketch"><x-icon name="home" :size="42" /></div>
-        <p>SMART HOME CONTROL</p>
-        <h1>SmartRoom</h1>
+        <img class="login-logo" src="{{ asset('img/logo.png') }}" alt="SmartRoom — Ruang Cerdas, Hidup Lebih Nyaman" width="900" height="233">
+        <h1 class="sr-only">SmartRoom</h1>
         <span>Daftarkan akun sebelum menggunakan SmartRoom.</span>
     </div>
 

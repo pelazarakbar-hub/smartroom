@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="theme-color" content="#0f766e">
+    <link rel="icon" type="image/png" href="{{ asset('img/favicon.png') }}">
     <title>@yield('title', 'SmartRoom') · SmartRoom</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -24,11 +25,8 @@
     {{-- Sidebar: hanya tampil di laptop (>= 900px) --}}
     <aside class="sidebar" aria-label="Menu utama">
         <div class="sidebar-brand">
-            <div class="house-sketch small"><x-icon name="home" :size="22" /></div>
-            <div>
-                <strong>SmartRoom</strong>
-                <span>{{ auth()->user()->isAdmin() ? 'Panel Admin' : 'Smart Home Control' }}</span>
-            </div>
+            <img class="sidebar-logo" src="{{ asset('img/logo.png') }}" alt="SmartRoom" width="900" height="233">
+            <span>{{ auth()->user()->isAdmin() ? 'Panel Admin' : 'Smart Home Control' }}</span>
         </div>
         <nav>
             @foreach ($nav as $item)

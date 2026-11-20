@@ -31,4 +31,33 @@ export function registerSmartRoom(Alpine) {
             }
         },
     }));
+
+    // Panel "Ubah nama" di Profil: inisial pada avatar ikut berubah saat mengetik,
+    // tombol Simpan aktif hanya bila nama valid dan berbeda dari nama sekarang.
+    Alpine.data('profileName', (original, value, editing) => ({
+        original,
+        name: value,
+        editing,
+
+        get initials() {
+            // Sama dengan User::initials() di server: dua huruf pertama nama.
+            return this.name.trim().slice(0, 2).toUpperCase() || '?';
+        },
+
+        get canSave() {
+            const clean = this.name.trim();
+            return clean.length >= 2 && clean !== this.original;
+        },
+
+        start(input) {
+            this.editing = true;
+            this.$nextTick(() => { input.focus(); input.select(); });
+        },
+
+        cancel() {
+            if (! this.editing) { return; }
+            this.editing = false;
+            this.name = this.original;
+        },
+    }));
 }

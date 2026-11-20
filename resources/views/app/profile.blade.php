@@ -5,25 +5,41 @@
 @section('content')
 @include('partials.header', ['title' => 'Profil & Pengaturan', 'caption' => 'Kelola akun dan preferensi', 'alert' => $alert])
 
-<section class="profile-card card" x-data="{ editing: {{ $errors->has('name') ? 'true' : 'false' }} }">
-    <div class="profile-avatar">{{ $user->initials() }}</div>
+<section class="profile-card card" x-data="profileName(@js($user->name), @js(old('name', $user->name)), @js($errors->has('name')))" x-on:keydown.escape="cancel()">
+    <div class="profile-top">
+        <div class="profile-avatar" x-text="editing ? initials : @js($user->initials())">{{ $user->initials() }}</div>
 
-    <div x-show="!editing" @if ($errors->has('name')) x-cloak @endif>
-        <h2>{{ $user->name }}</h2>
-        <p>{{ $user->email }}</p>
-        <button type="button" x-on:click="editing = true; $nextTick(() => $refs.name.focus())">Edit profil</button>
+        <div x-show="!editing" @if ($errors->has('name')) x-cloak @endif>
+            <h2>{{ $user->name }}</h2>
+            <p>{{ $user->email }}</p>
+            <button type="button" class="edit-trigger" x-on:click="start($refs.name)"><x-icon name="user" :size="16" /> Edit profil</button>
+        </div>
+
+        <div x-show="editing" @if (! $errors->has('name')) x-cloak @endif>
+            <h2 class="edit-title">Ubah nama</h2>
+            <p class="edit-sub">Nama ini tampil pada sapaan di Beranda dan di profil Anda.</p>
+        </div>
     </div>
 
     <form class="profile-edit" method="POST" action="{{ route('app.profile.name') }}" data-submit-busy x-show="editing" @if (! $errors->has('name')) x-cloak @endif>
         @csrf
-        <label>
-            Nama tampilan
-            <input name="name" x-ref="name" value="{{ old('name', $user->name) }}" autocomplete="name" @error('name') aria-invalid="true" @enderror>
-            @error('name') <span class="field-error">{{ $message }}</span> @enderror
-        </label>
-        <div>
-            <button type="submit" class="save">Simpan</button>
-            <button type="button" x-on:click="editing = false">Batal</button>
+        <label for="profile-name">Nama tampilan</label>
+        <div class="input-icon">
+            <x-icon name="user" :size="18" />
+            <input id="profile-name" name="name" x-ref="name" x-model="name" maxlength="100" autocomplete="name" placeholder="Nama lengkap Anda"
+                   @error('name') aria-invalid="true" @enderror>
+        </div>
+        <div class="edit-meta">
+            @error('name')
+                <span class="field-error">{{ $message }}</span>
+            @else
+                <span class="field-hint">Minimal 2 karakter.</span>
+            @enderror
+            <span class="char-count" x-text="name.length + '/100'">0/100</span>
+        </div>
+        <div class="edit-actions">
+            <button type="button" class="ghost" x-on:click="cancel()">Batal</button>
+            <button type="submit" class="save" x-bind:disabled="! canSave">Simpan</button>
         </div>
     </form>
 </section>
