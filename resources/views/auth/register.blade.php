@@ -5,7 +5,7 @@
 @section('content')
 <div class="login-screen">
     <div class="login-brand">
-        <img class="login-logo" src="{{ asset('img/logo.png') }}" alt="SmartRoom — Ruang Cerdas, Hidup Lebih Nyaman" width="900" height="233">
+        <a href="{{ url('/') }}" aria-label="Kembali ke halaman depan SmartRoom"><img class="login-logo" src="{{ asset('img/logo.png') }}" alt="SmartRoom — Ruang Cerdas, Hidup Lebih Nyaman" width="900" height="233"></a>
         <h1 class="sr-only">SmartRoom</h1>
         <span>Daftarkan akun sebelum menggunakan SmartRoom.</span>
     </div>
