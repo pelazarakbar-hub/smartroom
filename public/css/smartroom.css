@@ -115,7 +115,7 @@ h1, h2, h3, strong, .sensor-card > strong, .chart-title strong, .device-summary 
 .login-brand > span { display: block; max-width: 290px; margin: 8px auto 0; color: var(--neutral-700); font-size: 14px; line-height: 20px; }
 .login-form { display: grid; gap: 16px; }
 .login-form label, .field label, .profile-edit label { color: var(--neutral-900); font-size: 14px; line-height: 20px; font-weight: 500; }
-.login-form input, .profile-edit input, .field input[type="text"], .field input[type="email"], .field input[type="number"], .field select, .field textarea {
+.login-form input, .profile-edit input, .field input[type="text"], .field input[type="email"], .field input[type="number"], .field input[type="password"], .field select, .field textarea {
   width: 100%; min-height: 48px; margin-top: 6px; padding: 11px 12px;
   border: 1px solid var(--neutral-500); border-radius: 10px; outline: 0;
   background: var(--white); color: var(--neutral-900); font-size: 16px; line-height: 24px;

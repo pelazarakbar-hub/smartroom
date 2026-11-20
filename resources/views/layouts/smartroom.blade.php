@@ -49,7 +49,14 @@
     <main class="app-main" id="konten">
         <div class="screen-content">
             @if (session('status'))
-                <p class="flash" role="status"><x-icon name="check" :size="16" /> {{ session('status') }}</p>
+                @php
+                    // Kunci status bawaan Breeze diterjemahkan; teks lain ditampilkan apa adanya.
+                    $statusText = [
+                        'profile-updated' => 'Perubahan akun berhasil disimpan.',
+                        'password-updated' => 'Password berhasil diganti.',
+                    ][session('status')] ?? session('status');
+                @endphp
+                <p class="flash" role="status"><x-icon name="check" :size="16" /> {{ $statusText }}</p>
             @endif
             @if (session('error'))
                 <p class="flash error" role="alert"><x-icon name="warning" :size="16" /> {{ session('error') }}</p>

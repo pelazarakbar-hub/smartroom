@@ -25,7 +25,7 @@ class Nav
             ['route' => 'app.room', 'label' => 'Ruangan', 'icon' => 'room', 'match' => ['app.room']],
             ['route' => 'app.devices', 'label' => 'Perangkat', 'icon' => 'device', 'match' => ['app.devices']],
             ['route' => 'app.insight', 'label' => 'AI Insight', 'icon' => 'spark', 'match' => ['app.insight']],
-            ['route' => 'app.profile', 'label' => 'Profil', 'icon' => 'user', 'match' => ['app.profile', 'app.activity']],
+            ['route' => 'app.profile', 'label' => 'Profil', 'icon' => 'user', 'match' => ['app.profile', 'app.activity', 'profile.edit']],
         ];
     }
 }
