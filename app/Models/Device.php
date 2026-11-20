@@ -64,6 +64,21 @@ class Device extends Model
             || $this->last_seen_at->gt(now()->subMinutes(self::OFFLINE_AFTER_MINUTES));
     }
 
+    /**
+     * Asal status online:
+     *  - 'live'      : perangkat sungguhan melapor dalam batas waktu (data masuk lewat API).
+     *  - 'simulated' : belum pernah melapor; online hanya karena saklar manual (perangkat contoh/uji coba).
+     *  - 'offline'   : dimatikan admin, atau pernah melapor tetapi sudah diam terlalu lama.
+     */
+    public function connectionState(): string
+    {
+        if (! $this->isOnline()) {
+            return 'offline';
+        }
+
+        return $this->last_seen_at === null ? 'simulated' : 'live';
+    }
+
     /** Padanan isOnline() untuk query (dipakai untuk menghitung perangkat online). */
     public function scopeOnline(Builder $query): Builder
     {

@@ -4,17 +4,26 @@
 
 @section('content')
 <div data-devices>
-    @include('partials.header', ['title' => 'Kontrol Perangkat', 'caption' => 'Perangkat keras terhubung', 'alert' => $alert])
+    @include('partials.header', ['title' => 'Kontrol Perangkat', 'caption' => 'Perangkat di ruangan ini', 'alert' => $alert])
 
     <div class="device-summary card">
-        <div><strong>{{ $connected }}</strong><span>Terhubung</span></div>
+        <div><strong>{{ $connected }}</strong><span>Terdaftar</span></div>
         <div><strong>{{ $online }}</strong><span>Online</span></div>
         <div><strong data-active-count>{{ $active }}</strong><span>Aktif</span></div>
     </div>
 
+    @if ($simulated > 0)
+        <div class="sim-notice card" role="note">
+            <x-icon name="info" :size="18" />
+            <p><strong>Mode simulasi.</strong> {{ $simulated }} perangkat belum tersambung ke alat sungguhan (ESP32/Wemos). Perintah Anda tetap tersimpan dan akan dijalankan alat begitu terhubung lewat API.</p>
+        </div>
+    @endif
+
     <div class="live-impact card" style="margin-top:12px" aria-live="polite">
         <div><x-icon name="thermometer" :size="18" /><span>Suhu terakhir</span><strong>{{ $reading ? number_format($reading->temperature, 1).'°C' : '–' }}</strong></div>
-        <div><x-icon name="sun" :size="18" /><span>Cahaya terakhir</span><strong>{{ $reading ? $reading->light.' lx' : '–' }}</strong></div>
+        @if ($reading && $reading->light !== null)
+            <div><x-icon name="sun" :size="18" /><span>Cahaya terakhir</span><strong>{{ $reading->light }} lx</strong></div>
+        @endif
     </div>
 
     <div class="section-heading"><h2>Perangkat Saya</h2></div>
@@ -30,8 +39,11 @@
                         <div class="device-copy">
                             <strong>{{ $device->name }}</strong>
                             <span>{{ $room->name }} · {{ $device->typeLabel() }}</span>
-                            @if ($device->isOnline())
+                            @php $state = $device->connectionState(); @endphp
+                            @if ($state === 'live')
                                 <em class="status-badge"><x-icon name="check" :size="14" /> Online · tersinkron</em>
+                            @elseif ($state === 'simulated')
+                                <em class="status-badge simulated"><x-icon name="info" :size="14" /> Simulasi · belum tersambung ke alat</em>
                             @else
                                 <em class="status-badge offline">
                                     <x-icon name="warning" :size="14" /> Offline

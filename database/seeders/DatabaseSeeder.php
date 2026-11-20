@@ -91,8 +91,6 @@ class DatabaseSeeder extends Seeder
                 'temperature' => round(28.5 + 3.5 * $heat, 1),
                 'humidity' => (int) round(67 - 4 * $heat),
                 'light' => (int) round(180 + 340 * $daylight),
-                'occupants' => 1,
-                'air_quality' => 42,
                 'recorded_at' => $time->toDateTimeString(),
             ];
         }

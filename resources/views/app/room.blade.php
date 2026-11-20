@@ -8,8 +8,11 @@
     };
     $charts = [
         $chartCard('Suhu', $reading ? number_format($reading->temperature, 1).'°C' : '–', $tempTrend, $tempChart, $axis),
-        $chartCard('Kelembapan', $reading ? $reading->humidity.'%' : '–', $humTrend, $humChart, $axis),
     ];
+    // Grafik kelembapan hanya ada bila perangkat mengirim data kelembapan.
+    if ($hasHumidity) {
+        $charts[] = $chartCard('Kelembapan', $reading && $reading->humidity !== null ? $reading->humidity.'%' : '–', $humTrend, $humChart, $axis);
+    }
 @endphp
 
 @section('content')

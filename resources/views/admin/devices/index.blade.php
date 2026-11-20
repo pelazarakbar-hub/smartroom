@@ -31,7 +31,8 @@
                             <td>{{ $device->room?->name }}</td>
                             <td><span class="badge {{ $device->is_on ? 'success' : '' }}">{{ $device->is_on ? 'ON' : 'OFF' }}</span></td>
                             <td>
-                                <span class="badge {{ $device->isOnline() ? 'success' : 'error' }}">{{ $device->isOnline() ? 'Online' : 'Offline' }}</span>
+                                @php $state = $device->connectionState(); @endphp
+                                <span class="badge {{ ['live' => 'success', 'simulated' => 'info', 'offline' => 'error'][$state] }}">{{ ['live' => 'Online', 'simulated' => 'Simulasi', 'offline' => 'Offline'][$state] }}</span>
                                 @if ($device->last_seen_at)<small>{{ $device->last_seen_at->diffForHumans() }}</small>@endif
                             </td>
                             <td>

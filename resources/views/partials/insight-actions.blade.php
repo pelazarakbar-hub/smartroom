@@ -10,7 +10,7 @@
 <div class="feedback">
     <span>Apakah saran ini membantu?</span>
     <div data-feedback data-url="{{ route('app.insight.feedback', $item['key']) }}">
-        <button type="button" data-helpful="1" class="{{ $item['helpful'] === true ? 'selected' : '' }}" aria-label="Membantu"><x-icon name="thumb-up" :size="16" /></button>
-        <button type="button" data-helpful="0" class="{{ $item['helpful'] === false ? 'selected' : '' }}" aria-label="Tidak membantu"><x-icon name="thumb-down" :size="16" /></button>
+        <button type="button" data-helpful="1" class="{{ $item['helpful'] === true ? 'selected' : '' }}" aria-pressed="{{ $item['helpful'] === true ? 'true' : 'false' }}" aria-label="Membantu" title="Klik lagi untuk membatalkan"><x-icon name="thumb-up" :size="16" /></button>
+        <button type="button" data-helpful="0" class="{{ $item['helpful'] === false ? 'selected' : '' }}" aria-pressed="{{ $item['helpful'] === false ? 'true' : 'false' }}" aria-label="Tidak membantu" title="Klik lagi untuk membatalkan"><x-icon name="thumb-down" :size="16" /></button>
     </div>
 </div>

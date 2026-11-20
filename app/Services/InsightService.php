@@ -97,7 +97,7 @@ class InsightService
     {
         $latest = $room->latestReading();
 
-        if (! $latest || $latest->recorded_at->lt(now()->subMinutes(self::STALE_MINUTES)) || $latest->occupants > 0) {
+        if (! $latest || $latest->recorded_at->lt(now()->subMinutes(self::STALE_MINUTES)) || $latest->occupants === null || $latest->occupants > 0) {
             return collect();
         }
 
@@ -110,7 +110,7 @@ class InsightService
 
     private function summary(SensorReading $latest, Collection $recent, ?string $direction): array
     {
-        $score = Comfort::score((float) $latest->temperature, (int) $latest->humidity, (int) $latest->air_quality, (int) $latest->light);
+        $score = Comfort::score((float) $latest->temperature, $latest->humidity, $latest->air_quality, $latest->light);
         $label = Comfort::label($score);
 
         $opening = match ($label['tone']) {
@@ -126,13 +126,20 @@ class InsightService
             default => '',
         };
 
-        $air = mb_strtolower(Status::air((int) $latest->air_quality)['label']);
+        // Hanya sebut sensor yang benar-benar mengirim data.
+        $parts = [$temperature];
+        if ($latest->humidity !== null) {
+            $parts[] = "kelembapan {$latest->humidity}%";
+        }
+        if ($latest->air_quality !== null) {
+            $parts[] = 'kualitas udara '.mb_strtolower(Status::air($latest->air_quality)['label']);
+        }
 
         return [
             'score' => $score,
             'label' => $label['label'],
             'tone' => $label['tone'],
-            'headline' => "{$opening} {$temperature}, kelembapan {$latest->humidity}%, kualitas udara {$air}.",
+            'headline' => $opening.' '.implode(', ', $parts).'.',
             'samples' => $recent->count(),
         ];
     }
@@ -218,9 +225,9 @@ class InsightService
 
     private function humidityInsight(SensorReading $latest): ?array
     {
-        $humidity = (int) $latest->humidity;
+        $humidity = $latest->humidity;
 
-        if ($humidity >= 40 && $humidity <= 70) {
+        if ($humidity === null || ($humidity >= 40 && $humidity <= 70)) {
             return null;
         }
 
@@ -239,9 +246,9 @@ class InsightService
 
     private function airInsight(SensorReading $latest): ?array
     {
-        $aqi = (int) $latest->air_quality;
+        $aqi = $latest->air_quality;
 
-        if ($aqi <= 50) {
+        if ($aqi === null || $aqi <= 50) {
             return null;
         }
 
@@ -256,8 +263,12 @@ class InsightService
         ]);
     }
 
-    private function lampInsight(Room $room, SensorReading $latest): array
+    private function lampInsight(Room $room, SensorReading $latest): ?array
     {
+        if ($latest->light === null) {
+            return null; // tanpa sensor cahaya, kondisi pencahayaan tidak bisa dinilai
+        }
+
         $lampOn = $room->devices->where('type', 'lamp')->contains('is_on', true);
 
         if ($latest->light > 500 && $lampOn) {

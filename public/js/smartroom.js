@@ -81,6 +81,32 @@
     Array.prototype.forEach.call(document.querySelectorAll(selector), fn);
   }
 
+  // Ambil ulang halaman ini di latar belakang lalu ganti isi kontainer [data-live-refresh] saja.
+  // Layar tidak berkedip dan posisi gulir tetap. Bila gagal, tampilan lama dibiarkan.
+  var refreshing = false;
+  function refreshLive() {
+    var current = document.querySelector('[data-live-refresh]');
+    if (!current || refreshing) { return Promise.resolve(); }
+    refreshing = true;
+
+    return fetch(window.location.href, {
+      headers: { 'Accept': 'text/html', 'X-Requested-With': 'XMLHttpRequest' },
+      credentials: 'same-origin'
+    }).then(function (response) {
+      if (response.redirected && response.url.indexOf('/login') !== -1) {
+        window.location.href = '/login';
+        return null;
+      }
+      return response.ok ? response.text() : null;
+    }).then(function (html) {
+      if (!html) { return; }
+      var next = new DOMParser().parseFromString(html, 'text/html').querySelector('[data-live-refresh]');
+      if (next && next.innerHTML.trim() !== current.innerHTML.trim()) { current.innerHTML = next.innerHTML; }
+    }).catch(function () {
+      /* koneksi terputus sebentar: coba lagi pada putaran berikutnya */
+    }).then(function () { refreshing = false; });
+  }
+
   // ------------------------------------------------------------ form masuk/daftar: cegah kirim ganda
   each('form[data-submit-busy]', function (form) {
     form.addEventListener('submit', function () {
@@ -205,22 +231,27 @@
   }
 
   // ------------------------------------------------------------ tombol kipas "One-Tap" di Beranda
-  each('[data-fan-quick]', function (button) {
-    button.addEventListener('click', function () {
-      var next = button.getAttribute('data-next') === '1';
-      var original = button.innerHTML;
-      button.disabled = true;
-      button.setAttribute('aria-busy', 'true');
-      button.innerHTML = '<span class="spinner" aria-hidden="true"></span>Mengirim perintah...';
+  // Memakai delegasi klik supaya tetap bekerja setelah isi halaman diganti oleh refreshLive().
+  document.addEventListener('click', function (event) {
+    var button = event.target.closest ? event.target.closest('[data-fan-quick]') : null;
+    if (!button || button.disabled) { return; }
 
-      post(button.getAttribute('data-url'), { on: next }).then(function () {
-        window.location.reload();
-      }).catch(function (error) {
-        button.disabled = false;
-        button.removeAttribute('aria-busy');
-        button.innerHTML = original;
-        notice(error.message, 'error');
-      });
+    var next = button.getAttribute('data-next') === '1';
+    var original = button.innerHTML;
+    button.disabled = true;
+    button.setAttribute('aria-busy', 'true');
+    button.innerHTML = '<span class="spinner" aria-hidden="true"></span>Mengirim perintah...';
+
+    post(button.getAttribute('data-url'), { on: next }).then(function () {
+      return refreshLive();
+    }).then(function () {
+      // Tombol lama masih ada berarti isi halaman tidak berhasil diperbarui: muat ulang saja.
+      if (document.body.contains(button)) { window.location.reload(); }
+    }).catch(function (error) {
+      button.disabled = false;
+      button.removeAttribute('aria-busy');
+      button.innerHTML = original;
+      notice(error.message, 'error');
     });
   });
 
@@ -251,11 +282,18 @@
   each('[data-feedback]', function (group) {
     var buttons = group.querySelectorAll('button');
     Array.prototype.forEach.call(buttons, function (button) {
+      button.setAttribute('aria-pressed', button.classList.contains('selected') ? 'true' : 'false');
+
       button.addEventListener('click', function () {
-        var helpful = button.getAttribute('data-helpful') === '1';
+        // Mengklik pilihan yang sedang aktif membatalkan penilaian (dikirim sebagai null).
+        var cancel = button.classList.contains('selected');
+        var helpful = cancel ? null : button.getAttribute('data-helpful') === '1';
+
         post(group.getAttribute('data-url'), { helpful: helpful }).then(function () {
           Array.prototype.forEach.call(buttons, function (other) {
-            other.classList.toggle('selected', other === button);
+            var on = !cancel && other === button;
+            other.classList.toggle('selected', on);
+            other.setAttribute('aria-pressed', on ? 'true' : 'false');
           });
         }).catch(function (error) {
           notice(error.message, 'error');
@@ -293,17 +331,18 @@
   // Ubah profil, panduan, dan dialog keluar memakai Alpine.js (lihat resources/js/app.js dan view profil).
 
   // ------------------------------------------------------------ pilih ruangan
-  each('[data-auto-submit]', function (select) {
-    select.addEventListener('change', function () { select.form.submit(); });
+  document.addEventListener('change', function (event) {
+    var select = event.target.closest ? event.target.closest('[data-auto-submit]') : null;
+    if (select && select.form) { select.form.submit(); }
   });
 
   // ------------------------------------------------------------ segarkan data otomatis
-  // Halaman data sensor dimuat ulang tiap 30 detik bila tab sedang terbuka dan tidak ada yang sedang diubah.
-  var live = document.querySelector('[data-live-refresh]');
-  if (live) {
+  // Data sensor diperbarui di tempat tiap 30 detik (tanpa memuat ulang halaman) bila tab sedang
+  // terbuka dan tidak ada yang sedang diproses.
+  if (document.querySelector('[data-live-refresh]')) {
     window.setInterval(function () {
       var busy = document.querySelector('.action-notice.loading') || document.querySelector('[aria-busy="true"]');
-      if (document.visibilityState === 'visible' && !busy) { window.location.reload(); }
+      if (document.visibilityState === 'visible' && !busy) { refreshLive(); }
     }, 30000);
   }
 })();

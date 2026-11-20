@@ -8,8 +8,11 @@ namespace App\Support;
  */
 class Comfort
 {
-    /** Rentang nyaman: suhu 22-28 °C, kelembapan 40-70 %, kualitas udara <= 50, cahaya 250-600 lx. */
-    public static function score(float $temperature, int $humidity, int $airQuality, int $light): int
+    /**
+     * Rentang nyaman: suhu 22-28 °C, kelembapan 40-70 %, kualitas udara <= 50, cahaya 250-600 lx.
+     * Sensor yang tidak ada (null) tidak ikut dinilai, jadi tidak mengurangi skor.
+     */
+    public static function score(float $temperature, ?int $humidity = null, ?int $airQuality = null, ?int $light = null): int
     {
         $penalty = 0.0;
 
@@ -19,19 +22,19 @@ class Comfort
             $penalty += min(25, (22 - $temperature) * 5);
         }
 
-        if ($humidity < 40) {
+        if ($humidity !== null && $humidity < 40) {
             $penalty += min(20, (40 - $humidity) * 0.8);
-        } elseif ($humidity > 70) {
+        } elseif ($humidity !== null && $humidity > 70) {
             $penalty += min(20, ($humidity - 70) * 0.8);
         }
 
-        if ($airQuality > 50) {
+        if ($airQuality !== null && $airQuality > 50) {
             $penalty += min(25, ($airQuality - 50) * 0.3);
         }
 
-        if ($light < 250) {
+        if ($light !== null && $light < 250) {
             $penalty += min(10, (250 - $light) / 25);
-        } elseif ($light > 600) {
+        } elseif ($light !== null && $light > 600) {
             $penalty += min(10, ($light - 600) / 60);
         }
 

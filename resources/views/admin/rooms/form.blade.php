@@ -85,7 +85,8 @@
 X-Room-Key: {{ $room->api_key }}
 Content-Type: application/json
 
-{"temperature": 29.5, "humidity": 64, "light": 410, "occupants": 1, "air_quality": 42}</pre>
+{"temperature": 29.5, "humidity": 64}</pre>
+            <p class="field-hint">Hanya <code>temperature</code> yang wajib. Kirim <code>humidity</code>, <code>light</code>, <code>occupants</code> (sensor PIR), atau <code>air_quality</code> (sensor udara) <strong>hanya bila sensornya terpasang</strong>; kolom yang tidak dikirim tidak ditampilkan di aplikasi.</p>
         </div>
 
         <div class="field">

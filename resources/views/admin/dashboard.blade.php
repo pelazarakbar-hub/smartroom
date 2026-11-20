@@ -36,8 +36,8 @@
                             <tr>
                                 <td><strong>{{ $room->name }}</strong><small>{{ $room->devices_count }} perangkat</small></td>
                                 <td>{{ $reading ? number_format($reading->temperature, 1).'°C' : '–' }}</td>
-                                <td>{{ $reading ? $reading->humidity.'%' : '–' }}</td>
-                                <td>{{ $reading ? $reading->light.' lx' : '–' }}</td>
+                                <td>{{ $reading && $reading->humidity !== null ? $reading->humidity.'%' : '–' }}</td>
+                                <td>{{ $reading && $reading->light !== null ? $reading->light.' lx' : '–' }}</td>
                                 <td>
                                     @if ($reading)
                                         <span class="badge {{ $fresh ? 'success' : 'error' }}">{{ $fresh ? 'Online' : 'Offline' }}</span>

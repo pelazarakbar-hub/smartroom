@@ -16,15 +16,14 @@ class ReadingService
      */
     public function record(Room $room, array $data): SensorReading
     {
-        // Nilai yang tidak dikirim perangkat memakai data terakhir, bukan nol.
-        $previous = $room->latestReading();
-
+        // Hanya suhu yang wajib. Sensor yang tidak mengirim data disimpan kosong (NULL),
+        // bukan angka karangan, supaya aplikasi tidak menampilkan sensor yang sebenarnya tidak ada.
         $reading = $room->readings()->create([
             'temperature' => round((float) $data['temperature'], 1),
-            'humidity' => (int) ($data['humidity'] ?? $previous?->humidity ?? 0),
-            'light' => (int) ($data['light'] ?? $previous?->light ?? 0),
-            'occupants' => (int) ($data['occupants'] ?? $previous?->occupants ?? 0),
-            'air_quality' => (int) ($data['air_quality'] ?? $previous?->air_quality ?? 40),
+            'humidity' => isset($data['humidity']) ? (int) $data['humidity'] : null,
+            'light' => isset($data['light']) ? (int) $data['light'] : null,
+            'occupants' => isset($data['occupants']) ? (int) $data['occupants'] : null,
+            'air_quality' => isset($data['air_quality']) ? (int) $data['air_quality'] : null,
             'recorded_at' => now(),
         ]);
 

@@ -59,13 +59,14 @@ class AppController extends Controller
             ->get();
 
         $temperatures = $readings->pluck('temperature')->all();
-        $humidities = $readings->pluck('humidity')->all();
+        $humidities = $readings->pluck('humidity')->filter(fn ($value) => $value !== null)->values()->all();
 
         $fanOn = $room->devices->where('type', 'fan')->contains('is_on', true);
         $lampOn = $room->devices->where('type', 'lamp')->contains('is_on', true);
 
         return view('app.room', $ctx + [
             'tempChart' => Status::chart($temperatures),
+            'hasHumidity' => count($humidities) > 0,
             'humChart' => Status::chart($humidities),
             'tempTrend' => Status::trend($temperatures, ($reading && $reading->temperature > 30) ? 'Stabil tinggi' : 'Stabil'),
             'humTrend' => Status::trend($humidities),
@@ -99,6 +100,7 @@ class AppController extends Controller
             'devices' => $devices,
             'connected' => $devices->count(),
             'online' => $devices->filter(fn ($device) => $device->isOnline())->count(),
+            'simulated' => $devices->filter(fn ($device) => $device->connectionState() === 'simulated')->count(),
             'active' => $devices->where('is_on', true)->count(),
         ]);
     }
@@ -210,14 +212,15 @@ class AppController extends Controller
     {
         abort_unless(in_array($key, InsightService::KEYS, true), 404);
 
-        $data = $request->validate(['helpful' => ['required', 'boolean']]);
+        // helpful: true = membantu, false = tidak membantu, null = batalkan penilaian.
+        $data = $request->validate(['helpful' => ['present', 'nullable', 'boolean']]);
 
         $ctx = $this->context($request);
         abort_unless($ctx['room'], 404);
 
         InsightFeedback::updateOrCreate(
             ['user_id' => $ctx['user']->id, 'room_id' => $ctx['room']->id, 'insight_key' => $key],
-            ['helpful' => (bool) $data['helpful']]
+            ['helpful' => $data['helpful'] === null ? null : (bool) $data['helpful']]
         );
 
         return response()->json(['ok' => true]);
@@ -303,32 +306,42 @@ class AppController extends Controller
         }
 
         $temperature = Status::temperature($r->temperature);
-        $humidity = Status::humidity($r->humidity);
-        $light = Status::light($r->light);
 
-        return [
-            [
-                'label' => 'Suhu', 'icon' => 'thermometer',
-                'value' => number_format($r->temperature, 1).'°C',
-                'note' => $temperature['label'], 'tone' => $temperature['tone'], 'status_icon' => $temperature['icon'],
-            ],
-            [
+        $cards = [[
+            'label' => 'Suhu', 'icon' => 'thermometer',
+            'value' => number_format($r->temperature, 1).'°C',
+            'note' => $temperature['label'], 'tone' => $temperature['tone'], 'status_icon' => $temperature['icon'],
+        ]];
+
+        // Sensor lain hanya tampil bila perangkat benar-benar mengirim datanya.
+        if ($r->humidity !== null) {
+            $humidity = Status::humidity($r->humidity);
+            $cards[] = [
                 'label' => 'Kelembapan', 'icon' => 'droplet',
                 'value' => $r->humidity.'%',
                 'note' => $humidity['label'], 'tone' => $humidity['tone'], 'status_icon' => $humidity['icon'],
-            ],
-            [
+            ];
+        }
+
+        if ($r->light !== null) {
+            $light = Status::light($r->light);
+            $cards[] = [
                 'label' => 'Intensitas Cahaya', 'icon' => 'sun',
                 'value' => $r->light.' lx',
                 'note' => $light['label'], 'tone' => $light['tone'], 'status_icon' => $light['icon'],
-            ],
-            [
+            ];
+        }
+
+        if ($r->occupants !== null) {
+            $cards[] = [
                 'label' => 'Keberadaan', 'icon' => 'users',
                 'value' => $r->occupants > 0 ? 'Ada' : 'Kosong',
                 'note' => $r->occupants > 0 ? $r->occupants.' orang' : 'Tidak ada orang',
                 'tone' => 'info', 'status_icon' => 'info',
-            ],
-        ];
+            ];
+        }
+
+        return $cards;
     }
 
     private function banner(?SensorReading $r, ?Device $fan): array
@@ -360,31 +373,41 @@ class AppController extends Controller
         }
 
         $temperature = Status::temperature($r->temperature);
-        $humidity = Status::humidity($r->humidity);
-        $light = Status::light($r->light);
-        $air = Status::air($r->air_quality);
 
-        return [
-            [
-                'label' => 'Suhu', 'value' => number_format($r->temperature, 1).'°C',
-                'range' => $fanOn ? 'Kipas aktif · pemantauan live' : 'Aman: 20–30°C',
-                'state' => $temperature['label'], 'tone' => $temperature['tone'], 'icon' => $temperature['icon'],
-            ],
-            [
+        $rows = [[
+            'label' => 'Suhu', 'value' => number_format($r->temperature, 1).'°C',
+            'range' => $fanOn ? 'Kipas aktif · pemantauan live' : 'Aman: 20–30°C',
+            'state' => $temperature['label'], 'tone' => $temperature['tone'], 'icon' => $temperature['icon'],
+        ]];
+
+        // Sensor lain hanya tampil bila perangkat benar-benar mengirim datanya.
+        if ($r->humidity !== null) {
+            $humidity = Status::humidity($r->humidity);
+            $rows[] = [
                 'label' => 'Kelembapan', 'value' => $r->humidity.'%',
                 'range' => 'Aman: 40–70%',
                 'state' => $humidity['label'], 'tone' => $humidity['tone'], 'icon' => $humidity['icon'],
-            ],
-            [
+            ];
+        }
+
+        if ($r->light !== null) {
+            $light = Status::light($r->light);
+            $rows[] = [
                 'label' => 'Cahaya', 'value' => $r->light.' lx',
                 'range' => $lampOn ? 'Lampu utama aktif' : 'Lampu utama nonaktif',
                 'state' => $light['label'], 'tone' => $light['tone'], 'icon' => $light['icon'],
-            ],
-            [
+            ];
+        }
+
+        if ($r->air_quality !== null) {
+            $air = Status::air($r->air_quality);
+            $rows[] = [
                 'label' => 'Kualitas Udara', 'value' => $air['label'],
                 'range' => 'Indeks: '.$r->air_quality.' AQI',
                 'state' => $air['label'], 'tone' => $air['tone'], 'icon' => $air['icon'],
-            ],
-        ];
+            ];
+        }
+
+        return $rows;
     }
 }

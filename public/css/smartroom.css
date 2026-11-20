@@ -245,6 +245,7 @@ h1, h2, h3, strong, .sensor-card > strong, .chart-title strong, .device-summary 
 .device-copy > span { margin-top: 2px; overflow: hidden; color: var(--neutral-700); font-size: 12px; line-height: 18px; text-overflow: ellipsis; white-space: nowrap; }
 .status-badge { display: inline-flex; align-items: center; gap: 4px; margin-top: 5px; padding: 3px 7px; border-radius: 999px; background: var(--success-bg); color: var(--success-text); font-size: 12px; line-height: 18px; font-style: normal; font-weight: 500; }
 .status-badge.offline { background: var(--error-bg); color: var(--error-text); }
+.status-badge.simulated { background: var(--info-bg); color: var(--info-text); }
 .status-badge.processing { background: var(--info-bg); color: var(--info-text); }
 .device-switch { display: grid; justify-items: end; gap: 5px; }
 .device-switch small { color: var(--neutral-700); font-size: 12px; line-height: 18px; font-weight: 500; }
@@ -449,4 +450,26 @@ h1, h2, h3, strong, .sensor-card > strong, .chart-title strong, .device-summary 
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
+}
+
+/* ------------------------------------------------------------ catatan mode simulasi */
+.sim-notice { display: flex; align-items: flex-start; gap: 10px; margin-top: 12px; padding: 12px 14px; border-color: var(--info-border); background: var(--info-bg); color: var(--info-text); box-shadow: none; }
+.sim-notice svg { flex: 0 0 auto; margin-top: 1px; }
+.sim-notice p { margin: 0; color: var(--neutral-900); font-size: 13px; line-height: 19px; }
+
+/* ------------------------------------------------------------ perpindahan halaman yang halus */
+/* Chrome/Edge/Safari terbaru: halaman lama memudar ke halaman baru, menu navigasi tetap di tempat. */
+@media (prefers-reduced-motion: no-preference) {
+  @view-transition { navigation: auto; }
+}
+::view-transition-old(root), ::view-transition-new(root) { animation-duration: .18s; animation-timing-function: ease-out; }
+.bottom-nav { view-transition-name: bottom-nav; }
+.sidebar { view-transition-name: sidebar; }
+
+/* Peramban tanpa view transitions: isi halaman muncul dengan fade-in singkat. */
+@keyframes screen-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@supports not (view-transition-name: none) {
+  @media (prefers-reduced-motion: no-preference) {
+    .screen-content { animation: screen-in .22s ease-out both; }
+  }
 }

@@ -423,4 +423,154 @@ class SmartRoomTest extends TestCase
             ->assertSee('Skor kenyamanan')
             ->assertSee('Prioritas Utama');
     }
+
+    // ------------------------------------------------------------ sensor opsional
+
+    public function test_api_hanya_butuh_suhu_dan_tidak_mengarang_sensor_lain(): void
+    {
+        [$room] = $this->roomWithFan();
+
+        $this->postJson('/api/device/readings', ['temperature' => 29.5], ['X-Room-Key' => $room->api_key])->assertCreated();
+
+        $this->assertDatabaseHas('sensor_readings', [
+            'room_id' => $room->id,
+            'temperature' => 29.5,
+            'humidity' => null,
+            'light' => null,
+            'occupants' => null,
+            'air_quality' => null,
+        ]);
+    }
+
+    public function test_halaman_ruangan_dan_beranda_hanya_menampilkan_sensor_yang_ada(): void
+    {
+        $user = $this->user();
+        [$room] = $this->roomWithFan($user);
+        // Perangkat dengan DHT11 saja: suhu dan kelembapan.
+        $room->readings()->create(['temperature' => 27.5, 'humidity' => 60, 'recorded_at' => now()]);
+
+        $this->actingAs($user)->get('/ruangan')
+            ->assertOk()
+            ->assertSee('Kelembapan')
+            ->assertDontSee('Kualitas Udara')
+            ->assertDontSee('Indeks:');
+
+        $this->actingAs($user)->get('/beranda')
+            ->assertOk()
+            ->assertSee('Kelembapan')
+            ->assertDontSee('Intensitas Cahaya')
+            ->assertDontSee('Keberadaan');
+    }
+
+    public function test_halaman_ruangan_menampilkan_kualitas_udara_bila_sensornya_mengirim_data(): void
+    {
+        $user = $this->user();
+        [$room] = $this->roomWithFan($user);
+        $room->readings()->create(['temperature' => 27.5, 'humidity' => 60, 'air_quality' => 35, 'recorded_at' => now()]);
+
+        $this->actingAs($user)->get('/ruangan')->assertOk()->assertSee('Kualitas Udara');
+    }
+
+    public function test_insight_tetap_berjalan_hanya_dengan_data_suhu(): void
+    {
+        $user = $this->user();
+        [$room] = $this->roomWithFan($user);
+        $room->readings()->create(['temperature' => 26.5, 'recorded_at' => now()->subMinute()]);
+
+        $analysis = $this->analysis($room, $user);
+        $keys = $this->keys($analysis);
+
+        $this->assertSame(100, $analysis['score']);
+        $this->assertStringContainsString('Suhu', $analysis['headline']);
+        $this->assertStringNotContainsString('kelembapan', $analysis['headline']);
+        $this->assertStringNotContainsString('kualitas udara', $analysis['headline']);
+        foreach (['air', 'humidity', 'lamp', 'energy'] as $absent) {
+            $this->assertNotContains($absent, $keys);
+        }
+        $this->assertContains('sensor', $keys);
+        $this->actingAs($user)->get('/insight')->assertOk();
+    }
+
+    public function test_saran_hemat_energi_tidak_muncul_tanpa_sensor_keberadaan(): void
+    {
+        $user = $this->user();
+        [$room] = $this->roomWithFan($user); // lampu menyala
+        $room->readings()->create(['temperature' => 26, 'recorded_at' => now()->subMinute()]);
+
+        $this->assertNotContains('energy', $this->keys($this->analysis($room, $user)));
+        $this->actingAs($user)->postJson('/insight/energy/terapkan')->assertStatus(422);
+    }
+
+    // ------------------------------------------------------------ umpan balik bisa dibatalkan
+
+    public function test_umpan_balik_bisa_dibatalkan_dan_diganti(): void
+    {
+        $user = $this->user();
+        $this->roomWithFan($user);
+        $where = ['user_id' => $user->id, 'insight_key' => 'fan'];
+
+        $this->actingAs($user)->postJson('/insight/fan/umpan-balik', ['helpful' => true])->assertOk();
+        $this->assertDatabaseHas('insight_feedbacks', $where + ['helpful' => true]);
+
+        $this->actingAs($user)->postJson('/insight/fan/umpan-balik', ['helpful' => null])->assertOk();
+        $this->assertDatabaseHas('insight_feedbacks', $where + ['helpful' => null]);
+
+        $this->actingAs($user)->postJson('/insight/fan/umpan-balik', ['helpful' => false])->assertOk();
+        $this->assertDatabaseHas('insight_feedbacks', $where + ['helpful' => false]);
+
+        // Kolom helpful wajib ada (boleh null), tetapi nilai ngawur ditolak.
+        $this->actingAs($user)->postJson('/insight/fan/umpan-balik', [])->assertStatus(422);
+        $this->actingAs($user)->postJson('/insight/fan/umpan-balik', ['helpful' => 'mungkin'])->assertStatus(422);
+    }
+
+    public function test_pembatalan_umpan_balik_tidak_menghapus_status_saran_diterapkan(): void
+    {
+        $user = $this->user();
+        [$room] = $this->roomWithFan($user);
+
+        $this->actingAs($user)->postJson('/insight/fan/terapkan')->assertOk();
+        $this->actingAs($user)->postJson('/insight/fan/umpan-balik', ['helpful' => true])->assertOk();
+        $this->actingAs($user)->postJson('/insight/fan/umpan-balik', ['helpful' => null])->assertOk();
+
+        $this->assertDatabaseHas('insight_feedbacks', ['user_id' => $user->id, 'insight_key' => 'fan', 'applied' => true, 'helpful' => null]);
+        $this->assertNotNull($room->fresh()->auto_fan_above);
+    }
+
+    // ------------------------------------------------------------ label perangkat
+
+    public function test_status_koneksi_perangkat_live_simulasi_atau_offline(): void
+    {
+        [, $fan, $lamp] = $this->roomWithFan();
+
+        $this->assertSame('simulated', $fan->fresh()->connectionState()); // belum pernah melapor
+
+        $fan->update(['last_seen_at' => now()->subSeconds(30)]);
+        $this->assertSame('live', $fan->fresh()->connectionState());
+
+        $fan->update(['last_seen_at' => now()->subMinutes(10)]);
+        $this->assertSame('offline', $fan->fresh()->connectionState());
+
+        $lamp->update(['is_online' => false]);
+        $this->assertSame('offline', $lamp->fresh()->connectionState());
+    }
+
+    public function test_halaman_perangkat_menandai_perangkat_contoh_sebagai_simulasi(): void
+    {
+        $user = $this->user();
+        [$room] = $this->roomWithFan($user);
+
+        $this->actingAs($user)->get('/perangkat')
+            ->assertOk()
+            ->assertSee('Mode simulasi')
+            ->assertSee('Simulasi · belum tersambung ke alat')
+            ->assertDontSee('Online · tersinkron');
+
+        // Begitu alat sungguhan mengirim data, statusnya berubah menjadi live.
+        $this->postJson('/api/device/readings', ['temperature' => 28], ['X-Room-Key' => $room->api_key])->assertCreated();
+
+        $this->actingAs($user)->get('/perangkat')
+            ->assertOk()
+            ->assertSee('Online · tersinkron')
+            ->assertDontSee('Mode simulasi');
+    }
 }

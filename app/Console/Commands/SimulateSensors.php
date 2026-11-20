@@ -11,7 +11,9 @@ class SimulateSensors extends Command
     protected $signature = 'smartroom:simulate
                             {--room= : ID ruangan (default: semua ruangan)}
                             {--interval=10 : Jeda dalam detik antar data}
-                            {--once : Kirim satu data saja lalu berhenti}';
+                            {--once : Kirim satu data saja lalu berhenti}
+                            {--air : Sertakan data kualitas udara (bila ingin meniru sensor udara)}
+                            {--occupants : Sertakan data keberadaan (bila ingin meniru sensor PIR)}';
 
     protected $description = 'Mensimulasikan data sensor SmartRoom sebagai pengganti perangkat sungguhan';
 
@@ -71,13 +73,22 @@ class SimulateSensors extends Command
 
         $humidity = max(55, min(72, ($last?->humidity ?? 65) + random_int(-1, 1)));
 
-        $reading = $readings->record($room, [
+        // Seperti perangkat sungguhan: hanya kirim data dari sensor yang "terpasang".
+        $payload = [
             'temperature' => $temperature,
             'humidity' => $humidity,
             'light' => (int) round($light),
-            'occupants' => 1,
-            'air_quality' => 40 + random_int(0, 6),
-        ]);
+        ];
+
+        if ($this->option('occupants')) {
+            $payload['occupants'] = 1;
+        }
+
+        if ($this->option('air')) {
+            $payload['air_quality'] = 40 + random_int(0, 6);
+        }
+
+        $reading = $readings->record($room, $payload);
 
         $this->line(sprintf(
             '[%s] %s: %.1f°C, %d%%, %d lx',
