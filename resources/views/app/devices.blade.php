@@ -30,10 +30,15 @@
                         <div class="device-copy">
                             <strong>{{ $device->name }}</strong>
                             <span>{{ $room->name }} · {{ $device->typeLabel() }}</span>
-                            @if ($device->is_online)
+                            @if ($device->isOnline())
                                 <em class="status-badge"><x-icon name="check" :size="14" /> Online · tersinkron</em>
                             @else
-                                <em class="status-badge offline"><x-icon name="warning" :size="14" /> Offline</em>
+                                <em class="status-badge offline">
+                                    <x-icon name="warning" :size="14" /> Offline
+                                    @if ($device->is_online && $device->last_seen_at)
+                                        · terakhir {{ $device->last_seen_at->diffForHumans() }}
+                                    @endif
+                                </em>
                             @endif
                         </div>
                         <div class="device-switch">
@@ -46,7 +51,7 @@
                                     data-type="{{ $device->type }}"
                                     data-name="{{ $device->name }}"
                                     data-url="{{ route('app.devices.toggle', $device) }}"
-                                    @disabled(! $device->is_online)>
+                                    @disabled(! $device->isOnline())>
                                 <span></span>
                             </button>
                         </div>
@@ -57,7 +62,7 @@
                             <div><span>Kecepatan kipas</span><strong data-speed-label>Level {{ $device->level }}</strong></div>
                             <input type="range" min="1" max="3" value="{{ $device->level }}" aria-label="Kecepatan kipas"
                                    data-speed-input data-url="{{ route('app.devices.speed', $device) }}"
-                                   @disabled(! $device->is_on || ! $device->is_online)>
+                                   @disabled(! $device->is_on || ! $device->isOnline())>
                             <div class="range-labels"><span>Rendah</span><span>Sedang</span><span>Tinggi</span></div>
                             <p class="control-guidance" data-speed-guidance @if ($device->is_on) hidden @endif>Nyalakan kipas untuk mengatur kecepatan.</p>
                         </div>

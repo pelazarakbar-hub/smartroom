@@ -70,6 +70,10 @@ class DeviceController extends Controller
             'type' => ['required', 'in:lamp,fan,other'],
         ]);
 
-        return $input + ['is_online' => $request->boolean('is_online')];
+        // Mencentang "online" menandai perangkat online secara manual (riwayat terakhir terlihat dikosongkan);
+        // perangkat sungguhan akan mengisinya lagi begitu melapor.
+        return $input + ($request->boolean('is_online')
+            ? ['is_online' => true, 'last_seen_at' => null]
+            : ['is_online' => false]);
     }
 }

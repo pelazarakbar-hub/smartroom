@@ -29,7 +29,7 @@ class ReadingService
         ]);
 
         // Setiap kiriman data dianggap tanda perangkat di ruangan ini masih hidup.
-        $room->devices()->update(['is_online' => true, 'last_seen_at' => now()]);
+        $room->markDevicesSeen();
 
         $this->applyAutomation($room, $reading);
 

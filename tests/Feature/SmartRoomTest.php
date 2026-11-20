@@ -195,4 +195,63 @@ class SmartRoomTest extends TestCase
 
         $this->assertTrue(User::where('email', 'siti@example.com')->firstOrFail()->rooms()->whereKey($room->id)->exists());
     }
+
+    public function test_perangkat_yang_lama_diam_dianggap_offline_dan_tidak_bisa_dikontrol(): void
+    {
+        $user = $this->user();
+        [$room, $fan, $lamp] = $this->roomWithFan($user);
+
+        // Fan pernah melapor 10 menit lalu; lampu belum pernah melapor (perangkat manual).
+        $fan->update(['last_seen_at' => now()->subMinutes(10)]);
+
+        $this->assertFalse($fan->fresh()->isOnline());
+        $this->assertTrue($lamp->fresh()->isOnline());
+        $this->assertSame(1, $room->devices()->online()->count());
+
+        $this->actingAs($user)->postJson("/perangkat/{$fan->id}/toggle", ['on' => true])->assertStatus(422);
+        $this->assertFalse($fan->fresh()->is_on);
+    }
+
+    public function test_perangkat_yang_baru_melapor_dianggap_online(): void
+    {
+        [, $fan] = $this->roomWithFan();
+        $fan->update(['last_seen_at' => now()->subSeconds(30)]);
+
+        $this->assertTrue($fan->fresh()->isOnline());
+    }
+
+    public function test_saklar_manual_offline_mengalahkan_data_terbaru(): void
+    {
+        [, $fan] = $this->roomWithFan();
+        $fan->update(['is_online' => false, 'last_seen_at' => now()]);
+
+        $this->assertFalse($fan->fresh()->isOnline());
+    }
+
+    public function test_data_sensor_dan_pengecekan_status_membuat_perangkat_online_lagi(): void
+    {
+        [$room, $fan, $lamp] = $this->roomWithFan();
+        $fan->update(['last_seen_at' => now()->subMinutes(10)]);
+        $lamp->update(['last_seen_at' => now()->subMinutes(10)]);
+
+        $this->postJson('/api/device/readings', ['temperature' => 28], ['X-Room-Key' => $room->api_key])->assertCreated();
+        $this->assertTrue($fan->fresh()->isOnline());
+
+        $fan->update(['last_seen_at' => now()->subMinutes(10)]);
+        $this->getJson('/api/device/state', ['X-Room-Key' => $room->api_key])->assertOk();
+        $this->assertTrue($fan->fresh()->isOnline());
+    }
+
+    public function test_admin_mencentang_online_menandai_perangkat_online_manual(): void
+    {
+        $admin = $this->user('admin');
+        [, $fan] = $this->roomWithFan();
+        $fan->update(['last_seen_at' => now()->subMinutes(10)]);
+
+        $this->actingAs($admin)->put("/admin/perangkat/{$fan->id}", [
+            'room_id' => $fan->room_id, 'name' => 'Kipas', 'type' => 'fan', 'is_online' => 1,
+        ])->assertRedirect();
+
+        $this->assertTrue($fan->fresh()->isOnline());
+    }
 }

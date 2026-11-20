@@ -98,7 +98,7 @@ class AppController extends Controller
         return view('app.devices', $ctx + [
             'devices' => $devices,
             'connected' => $devices->count(),
-            'online' => $devices->where('is_online', true)->count(),
+            'online' => $devices->filter(fn ($device) => $device->isOnline())->count(),
             'active' => $devices->where('is_on', true)->count(),
         ]);
     }
@@ -141,7 +141,7 @@ class AppController extends Controller
     {
         $this->authorizeDevice($request, $device);
 
-        if (! $device->is_online) {
+        if (! $device->isOnline()) {
             return response()->json(['message' => $device->name.' sedang offline.'], 422);
         }
 
@@ -161,7 +161,7 @@ class AppController extends Controller
 
         $data = $request->validate(['level' => ['required', 'integer', 'between:1,3']]);
 
-        if (! $device->is_online) {
+        if (! $device->isOnline()) {
             return response()->json(['message' => $device->name.' sedang offline.'], 422);
         }
 

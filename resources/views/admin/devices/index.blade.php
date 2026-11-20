@@ -31,7 +31,7 @@
                             <td>{{ $device->room?->name }}</td>
                             <td><span class="badge {{ $device->is_on ? 'success' : '' }}">{{ $device->is_on ? 'ON' : 'OFF' }}</span></td>
                             <td>
-                                <span class="badge {{ $device->is_online ? 'success' : 'error' }}">{{ $device->is_online ? 'Online' : 'Offline' }}</span>
+                                <span class="badge {{ $device->isOnline() ? 'success' : 'error' }}">{{ $device->isOnline() ? 'Online' : 'Offline' }}</span>
                                 @if ($device->last_seen_at)<small>{{ $device->last_seen_at->diffForHumans() }}</small>@endif
                             </td>
                             <td>

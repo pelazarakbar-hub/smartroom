@@ -43,7 +43,7 @@
             <input type="checkbox" name="is_online" value="1" @checked(old('is_online', $device->is_online))>
             Perangkat online
         </label>
-        <span class="field-hint">Status online juga diperbarui otomatis tiap perangkat mengirim data.</span>
+        <span class="field-hint">Perangkat sungguhan otomatis dianggap offline bila tidak mengirim data lebih dari 2 menit. Mencentang ini menandainya online lagi secara manual.</span>
     </div>
 
     <div class="form-actions">

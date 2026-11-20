@@ -51,16 +51,14 @@ class DatabaseSeeder extends Seeder
                 'name' => 'Lampu Utama',
                 'type' => 'lamp',
                 'is_on' => true,
-                'is_online' => true,
-                'last_seen_at' => now(),
+                'is_online' => true, // belum pernah melapor: tetap online sampai perangkat sungguhan terhubung
             ]);
             $room->devices()->create([
                 'name' => 'Kipas Pintar',
                 'type' => 'fan',
                 'is_on' => false,
                 'level' => 2,
-                'is_online' => true,
-                'last_seen_at' => now(),
+                'is_online' => true, // belum pernah melapor: tetap online sampai perangkat sungguhan terhubung
             ]);
         }
 

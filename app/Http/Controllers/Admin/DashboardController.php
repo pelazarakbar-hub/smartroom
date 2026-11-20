@@ -20,7 +20,7 @@ class DashboardController extends Controller
                 'users' => User::where('role', 'user')->count(),
                 'rooms' => $rooms->count(),
                 'devices' => Device::count(),
-                'online' => Device::where('is_online', true)->count(),
+                'online' => Device::online()->count(),
                 'active' => Device::where('is_on', true)->count(),
             ],
             'rooms' => $rooms,

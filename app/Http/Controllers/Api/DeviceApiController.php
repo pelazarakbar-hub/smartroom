@@ -41,6 +41,9 @@ class DeviceApiController extends Controller
     {
         $room = $this->room($request);
 
+        // Perangkat yang rutin mengecek status jelas masih hidup (ditulis paling sering tiap 20 detik).
+        $room->markDevicesSeen(20);
+
         return response()->json([
             'room' => $room->name,
             'auto_fan_above' => $room->auto_fan_above,

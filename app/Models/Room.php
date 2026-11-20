@@ -47,6 +47,24 @@ class Room extends Model
         return $this->hasMany(Device::class);
     }
 
+    /**
+     * Tandai semua perangkat di ruangan ini sebagai baru saja terlihat.
+     * Dengan $onlyIfOlderThan, tulis ke database hanya bila data terakhir sudah lebih tua
+     * dari sekian detik (perangkat yang mengecek status tiap beberapa detik tidak membebani database).
+     */
+    public function markDevicesSeen(int $onlyIfOlderThan = 0): void
+    {
+        $query = $this->devices();
+
+        if ($onlyIfOlderThan > 0) {
+            $query->where(function ($q) use ($onlyIfOlderThan) {
+                $q->whereNull('last_seen_at')->orWhere('last_seen_at', '<', now()->subSeconds($onlyIfOlderThan));
+            });
+        }
+
+        $query->update(['is_online' => true, 'last_seen_at' => now()]);
+    }
+
     public function readings(): HasMany
     {
         return $this->hasMany(SensorReading::class);

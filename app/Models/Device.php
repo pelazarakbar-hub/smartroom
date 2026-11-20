@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -13,6 +14,9 @@ class Device extends Model
         'fan' => 'Kipas',
         'other' => 'Lainnya',
     ];
+
+    /** Perangkat yang sudah pernah melapor dianggap offline bila diam lebih lama dari ini. */
+    public const OFFLINE_AFTER_MINUTES = 2;
 
     protected $fillable = [
         'room_id',
@@ -42,6 +46,31 @@ class Device extends Model
     public function logs(): HasMany
     {
         return $this->hasMany(DeviceLog::class);
+    }
+
+    /**
+     * Status online yang sebenarnya. "is_online" adalah saklar manual admin (false = dipaksa offline).
+     * Perangkat yang pernah melapor (last_seen_at terisi) dianggap offline bila tidak melapor
+     * selama OFFLINE_AFTER_MINUTES. Perangkat yang belum pernah melapor dianggap online
+     * selama saklar manual menyala, supaya aplikasi bisa dicoba tanpa perangkat sungguhan.
+     */
+    public function isOnline(): bool
+    {
+        if (! $this->is_online) {
+            return false;
+        }
+
+        return $this->last_seen_at === null
+            || $this->last_seen_at->gt(now()->subMinutes(self::OFFLINE_AFTER_MINUTES));
+    }
+
+    /** Padanan isOnline() untuk query (dipakai untuk menghitung perangkat online). */
+    public function scopeOnline(Builder $query): Builder
+    {
+        return $query->where('is_online', true)->where(function (Builder $q) {
+            $q->whereNull('last_seen_at')
+                ->orWhere('last_seen_at', '>', now()->subMinutes(self::OFFLINE_AFTER_MINUTES));
+        });
     }
 
     public function icon(): string
