@@ -6,6 +6,7 @@ use App\Models\Device;
 use App\Models\Room;
 use App\Models\SensorReading;
 use App\Models\User;
+use App\Services\InsightService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -253,5 +254,173 @@ class SmartRoomTest extends TestCase
         ])->assertRedirect();
 
         $this->assertTrue($fan->fresh()->isOnline());
+    }
+
+    // ------------------------------------------------------------ AI Insight
+
+    private function reading(Room $room, array $values = [], int $minutesAgo = 1): SensorReading
+    {
+        return $room->readings()->create($values + [
+            'temperature' => 26,
+            'humidity' => 55,
+            'light' => 400,
+            'occupants' => 1,
+            'air_quality' => 30,
+            'recorded_at' => now()->subMinutes($minutesAgo),
+        ]);
+    }
+
+    private function analysis(Room $room, User $user): array
+    {
+        return app(InsightService::class)->analyze($room->fresh(), $user);
+    }
+
+    private function keys(array $analysis): array
+    {
+        return array_column($analysis['insights'], 'key');
+    }
+
+    public function test_insight_tanpa_data_hanya_menyarankan_memeriksa_sensor(): void
+    {
+        $user = $this->user();
+        [$room] = $this->roomWithFan($user);
+
+        $analysis = $this->analysis($room, $user);
+
+        $this->assertNull($analysis['score']);
+        $this->assertSame(['sensor'], $this->keys($analysis));
+        $this->assertSame('high', $analysis['insights'][0]['severity']);
+    }
+
+    public function test_insight_menahan_saran_bila_data_sensor_sudah_lama(): void
+    {
+        $user = $this->user();
+        [$room] = $this->roomWithFan($user);
+        $this->reading($room, ['temperature' => 35], 30); // 30 menit lalu: dianggap basi
+
+        $analysis = $this->analysis($room, $user);
+
+        $this->assertNull($analysis['score']);
+        $this->assertSame(['sensor'], $this->keys($analysis));
+    }
+
+    public function test_insight_kondisi_normal_bernilai_nyaman_tanpa_peringatan(): void
+    {
+        $user = $this->user();
+        [$room] = $this->roomWithFan($user);
+        foreach ([60, 40, 20, 5, 1] as $minutes) {
+            $this->reading($room, [], $minutes);
+        }
+
+        $analysis = $this->analysis($room, $user);
+
+        $this->assertGreaterThanOrEqual(80, $analysis['score']);
+        $this->assertSame('Nyaman', $analysis['label']);
+        $this->assertNotContains('humidity', $this->keys($analysis));
+        $this->assertNotContains('air', $this->keys($analysis));
+        $this->assertNotContains('energy', $this->keys($analysis));
+        $this->assertSame('ok', $analysis['insights'][0]['severity']);
+    }
+
+    public function test_insight_suhu_tinggi_menjadi_prioritas_pertama_dan_menurunkan_skor(): void
+    {
+        $user = $this->user();
+        [$room] = $this->roomWithFan($user);
+        foreach ([80, 60, 40, 20, 10, 5, 1] as $minutes) {
+            $this->reading($room, ['temperature' => 32], $minutes);
+        }
+
+        $analysis = $this->analysis($room, $user);
+
+        $this->assertLessThan(80, $analysis['score']);
+        $this->assertSame('fan', $analysis['insights'][0]['key']);
+        $this->assertSame('high', $analysis['insights'][0]['severity']);
+        $this->assertTrue($analysis['insights'][0]['actionable']);
+    }
+
+    public function test_insight_mendeteksi_suhu_yang_sedang_naik_sebelum_melewati_batas(): void
+    {
+        $user = $this->user();
+        [$room] = $this->roomWithFan($user);
+        foreach ([40, 35, 30, 25, 20] as $minutes) {
+            $this->reading($room, ['temperature' => 26], $minutes);
+        }
+        foreach ([10, 8, 6, 4, 2] as $minutes) {
+            $this->reading($room, ['temperature' => 29], $minutes);
+        }
+
+        $fan = collect($this->analysis($room, $user)['insights'])->firstWhere('key', 'fan');
+
+        $this->assertSame('Suhu mulai naik', $fan['title']);
+        $this->assertSame('medium', $fan['severity']);
+    }
+
+    public function test_insight_kelembapan_dan_kualitas_udara_di_luar_batas_muncul(): void
+    {
+        $user = $this->user();
+        [$room] = $this->roomWithFan($user);
+        $this->reading($room, ['humidity' => 30, 'air_quality' => 150]);
+
+        $analysis = $this->analysis($room, $user);
+        $byKey = collect($analysis['insights'])->keyBy('key');
+
+        $this->assertSame('medium', $byKey['humidity']['severity']);
+        $this->assertSame('high', $byKey['air']['severity']);
+        $this->assertSame('air', $analysis['insights'][0]['key']); // paling penting di urutan pertama
+    }
+
+    public function test_saran_hemat_energi_mematikan_perangkat_saat_ruangan_kosong(): void
+    {
+        $user = $this->user();
+        [$room, , $lamp] = $this->roomWithFan($user); // lampu menyala
+        $this->reading($room, ['occupants' => 0]);
+
+        $this->assertContains('energy', $this->keys($this->analysis($room, $user)));
+
+        $this->actingAs($user)->postJson('/insight/energy/terapkan')
+            ->assertOk()->assertJsonPath('ok', true);
+
+        $this->assertFalse($lamp->fresh()->is_on);
+        $this->assertDatabaseHas('device_logs', ['device_id' => $lamp->id, 'user_id' => $user->id]);
+        $this->assertDatabaseHas('insight_feedbacks', ['user_id' => $user->id, 'insight_key' => 'energy', 'applied' => true]);
+
+        // Sudah mati semua: saran tidak muncul lagi dan penerapan ulang ditolak.
+        $this->assertNotContains('energy', $this->keys($this->analysis($room, $user)));
+        $this->actingAs($user)->postJson('/insight/energy/terapkan')->assertStatus(422);
+    }
+
+    public function test_saran_hemat_energi_tidak_muncul_saat_ruangan_terisi(): void
+    {
+        $user = $this->user();
+        [$room, , $lamp] = $this->roomWithFan($user);
+        $this->reading($room, ['occupants' => 2]);
+
+        $this->assertNotContains('energy', $this->keys($this->analysis($room, $user)));
+        $this->actingAs($user)->postJson('/insight/energy/terapkan')->assertStatus(422);
+        $this->assertTrue($lamp->fresh()->is_on);
+    }
+
+    public function test_umpan_balik_insight_menerima_kunci_baru_dan_menolak_yang_tidak_dikenal(): void
+    {
+        $user = $this->user();
+        $this->roomWithFan($user);
+
+        $this->actingAs($user)->postJson('/insight/air/umpan-balik', ['helpful' => true])->assertOk();
+        $this->assertDatabaseHas('insight_feedbacks', ['user_id' => $user->id, 'insight_key' => 'air', 'helpful' => true]);
+
+        $this->actingAs($user)->postJson('/insight/ngawur/umpan-balik', ['helpful' => true])->assertNotFound();
+        $this->actingAs($user)->postJson('/insight/ngawur/terapkan')->assertNotFound();
+    }
+
+    public function test_halaman_insight_menampilkan_skor_kenyamanan(): void
+    {
+        $user = $this->user();
+        [$room] = $this->roomWithFan($user);
+        $this->reading($room);
+
+        $this->actingAs($user)->get('/insight')
+            ->assertOk()
+            ->assertSee('Skor kenyamanan')
+            ->assertSee('Prioritas Utama');
     }
 }

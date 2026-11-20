@@ -112,7 +112,7 @@ class AppController extends Controller
         }
 
         return view('app.insight', $ctx + [
-            'insights' => app(InsightService::class)->forRoom($ctx['room'], $ctx['user']),
+            'analysis' => app(InsightService::class)->analyze($ctx['room'], $ctx['user']),
         ]);
     }
 
@@ -176,27 +176,39 @@ class AppController extends Controller
 
     public function applyInsight(Request $request, string $key): JsonResponse
     {
-        abort_unless($key === 'fan', 404);
+        abort_unless(in_array($key, ['fan', 'energy'], true), 404);
 
         $ctx = $this->context($request);
         abort_unless($ctx['room'], 404);
 
-        $ctx['room']->update(['auto_fan_above' => 30]);
+        if ($key === 'fan') {
+            $ctx['room']->update(['auto_fan_above' => 30]);
+            $message = 'Kipas akan menyala saat suhu melebihi 30°C.';
+            $notice = 'Aturan otomatis berhasil dibuat dan sudah aktif.';
+        } else {
+            // Data dicek ulang di server: hanya perangkat yang memang layak dimatikan.
+            $targets = app(InsightService::class)->energyTargets($ctx['room']);
+
+            if ($targets->isEmpty()) {
+                return response()->json(['message' => 'Tidak ada perangkat yang perlu dimatikan sekarang.'], 422);
+            }
+
+            $targets->each(fn (Device $device) => $device->turn(false, $ctx['user']));
+            $message = $targets->pluck('name')->join(', ', ' dan ').' dimatikan.';
+            $notice = 'Perangkat yang tidak dipakai sudah dimatikan.';
+        }
 
         InsightFeedback::updateOrCreate(
             ['user_id' => $ctx['user']->id, 'room_id' => $ctx['room']->id, 'insight_key' => $key],
             ['applied' => true]
         );
 
-        return response()->json([
-            'ok' => true,
-            'message' => 'Kipas akan menyala saat suhu melebihi 30°C.',
-        ]);
+        return response()->json(['ok' => true, 'message' => $message, 'notice' => $notice]);
     }
 
     public function insightFeedback(Request $request, string $key): JsonResponse
     {
-        abort_unless(in_array($key, ['fan', 'lamp', 'sensor'], true), 404);
+        abort_unless(in_array($key, InsightService::KEYS, true), 404);
 
         $data = $request->validate(['helpful' => ['required', 'boolean']]);
 

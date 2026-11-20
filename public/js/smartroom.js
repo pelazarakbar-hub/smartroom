@@ -234,10 +234,11 @@
 
       post(button.getAttribute('data-url')).then(function (data) {
         button.removeAttribute('aria-busy');
-        button.textContent = 'Saran diterapkan';
-        var target = document.querySelector('[data-applied-text]');
+        button.textContent = button.getAttribute('data-done-label') || 'Saran diterapkan';
+        var scope = button.closest('article') || document;
+        var target = scope.querySelector('[data-applied-text]');
         if (target) { target.textContent = data.message; target.hidden = false; }
-        notice('Aturan otomatis berhasil dibuat dan sudah aktif.', 'success');
+        notice(data.notice || 'Saran berhasil diterapkan.', 'success');
       }).catch(function (error) {
         button.disabled = false;
         button.removeAttribute('aria-busy');

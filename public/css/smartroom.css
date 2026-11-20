@@ -262,6 +262,22 @@ h1, h2, h3, strong, .sensor-card > strong, .chart-title strong, .device-summary 
 .analysis-summary strong, .analysis-summary span { display: block; }
 .analysis-summary strong { color: var(--secondary-900); font-size: 16px; line-height: 24px; }
 .analysis-summary span { margin-top: 2px; color: var(--neutral-700); font-size: 12px; line-height: 18px; }
+.comfort-card { display: flex; align-items: center; gap: 16px; padding: 16px; }
+.comfort-score { display: flex; width: 84px; height: 84px; flex: 0 0 auto; flex-direction: column; align-items: center; justify-content: center; border-radius: 50%; background: var(--primary-50); border: 3px solid var(--primary-border); color: var(--primary-800); }
+.comfort-score strong { font-size: 28px; line-height: 30px; font-weight: 600; }
+.comfort-score span { font-size: 11px; line-height: 14px; color: var(--neutral-700); }
+.comfort-body { min-width: 0; flex: 1; }
+.comfort-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.comfort-head h2 { margin: 0; color: var(--secondary-900); font-size: 16px; line-height: 24px; }
+.comfort-head .status-chip { margin-top: 0; }
+.comfort-body p { margin: 6px 0 4px; color: var(--neutral-900); font-size: 14px; line-height: 20px; }
+.comfort-body small { color: var(--neutral-500); font-size: 12px; line-height: 18px; }
+.score-bar { height: 8px; margin-top: 8px; overflow: hidden; border-radius: 999px; background: var(--neutral-200); }
+.score-bar span { display: block; height: 100%; border-radius: 999px; background: var(--success-text); }
+.score-bar span.warning { background: var(--accent-500); }
+.score-bar span.error { background: var(--error-text); }
+.compact-recommendation .primary-action { margin-top: 12px; }
+.compact-recommendation .compact-reason { color: var(--neutral-500); font-size: 13px; line-height: 18px; }
 .recommendation-card { padding: 16px; }
 .recommendation-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .number-box { display: grid; width: 40px; height: 40px; flex: 0 0 auto; place-items: center; border-radius: 10px; background: var(--info-bg); color: var(--secondary-900); font-size: 14px; line-height: 20px; font-weight: 500; }
