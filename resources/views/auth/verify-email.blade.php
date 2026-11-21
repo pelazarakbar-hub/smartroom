@@ -1,31 +1,27 @@
-<x-guest-layout>
-    <div class="mb-4 text-sm text-gray-600">
-        {{ __('Thanks for signing up! Before getting started, could you verify your email address by clicking on the link we just emailed to you? If you didn\'t receive the email, we will gladly send you another.') }}
+@extends('layouts.smartroom-guest')
+
+@section('title', 'Verifikasi email')
+
+@section('content')
+<div class="login-screen">
+    <div class="login-brand">
+        <a href="{{ url('/') }}" aria-label="Kembali ke halaman depan SmartRoom"><img class="login-logo" src="{{ asset('img/logo.png') }}" alt="SmartRoom — Ruang Cerdas, Hidup Lebih Nyaman" width="900" height="233"></a>
+        <h1 class="sr-only">Verifikasi email</h1>
+        <span>Kami sudah mengirim tautan verifikasi ke emailmu. Klik tautan itu untuk mengaktifkan akun.</span>
     </div>
 
     @if (session('status') == 'verification-link-sent')
-        <div class="mb-4 font-medium text-sm text-green-600">
-            {{ __('A new verification link has been sent to the email address you provided during registration.') }}
-        </div>
+        <p class="auth-message success" role="status">Tautan verifikasi baru sudah dikirim ke emailmu.</p>
     @endif
 
-    <div class="mt-4 flex items-center justify-between">
-        <form method="POST" action="{{ route('verification.send') }}">
-            @csrf
+    <form class="login-form" method="POST" action="{{ route('verification.send') }}" data-submit-busy>
+        @csrf
+        <button class="login-button" type="submit">Kirim ulang email verifikasi</button>
+    </form>
 
-            <div>
-                <x-primary-button>
-                    {{ __('Resend Verification Email') }}
-                </x-primary-button>
-            </div>
-        </form>
-
-        <form method="POST" action="{{ route('logout') }}">
-            @csrf
-
-            <button type="submit" class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                {{ __('Log Out') }}
-            </button>
-        </form>
-    </div>
-</x-guest-layout>
+    <form method="POST" action="{{ route('logout') }}">
+        @csrf
+        <button class="register-link" type="submit" style="background:none;border:0;width:100%;cursor:pointer">Bukan akunmu? <strong>Keluar</strong></button>
+    </form>
+</div>
+@endsection

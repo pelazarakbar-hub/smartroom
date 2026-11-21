@@ -1,25 +1,32 @@
-<x-guest-layout>
-    <div class="mb-4 text-sm text-gray-600">
-        {{ __('Forgot your password? No problem. Just let us know your email address and we will email you a password reset link that will allow you to choose a new one.') }}
+@extends('layouts.smartroom-guest')
+
+@section('title', 'Lupa password')
+
+@section('content')
+<div class="login-screen">
+    <div class="login-brand">
+        <a href="{{ url('/') }}" aria-label="Kembali ke halaman depan SmartRoom"><img class="login-logo" src="{{ asset('img/logo.png') }}" alt="SmartRoom — Ruang Cerdas, Hidup Lebih Nyaman" width="900" height="233"></a>
+        <h1 class="sr-only">Lupa password</h1>
+        <span>Masukkan email akunmu. Kami kirim tautan untuk membuat password baru.</span>
     </div>
 
-    <!-- Session Status -->
-    <x-auth-session-status class="mb-4" :status="session('status')" />
-
-    <form method="POST" action="{{ route('password.email') }}">
+    <form class="login-form" method="POST" action="{{ route('password.email') }}" novalidate data-submit-busy>
         @csrf
 
-        <!-- Email Address -->
-        <div>
-            <x-input-label for="email" :value="__('Email')" />
-            <x-text-input id="email" class="block mt-1 w-full" type="email" name="email" :value="old('email')" required autofocus />
-            <x-input-error :messages="$errors->get('email')" class="mt-2" />
-        </div>
+        <label>
+            Alamat email
+            <input type="email" name="email" value="{{ old('email') }}" placeholder="nama@email.com" autocomplete="email" inputmode="email" autofocus
+                   @error('email') aria-invalid="true" @enderror>
+            @error('email') <span class="field-error">{{ $message }}</span> @enderror
+        </label>
 
-        <div class="flex items-center justify-end mt-4">
-            <x-primary-button>
-                {{ __('Email Password Reset Link') }}
-            </x-primary-button>
-        </div>
+        @if (session('status'))
+            <p class="auth-message success" role="status">{{ session('status') }}</p>
+        @endif
+
+        <button class="login-button" type="submit">Kirim tautan reset</button>
     </form>
-</x-guest-layout>
+
+    <a class="register-link" href="{{ route('login') }}">Ingat password? <strong>Kembali masuk</strong></a>
+</div>
+@endsection

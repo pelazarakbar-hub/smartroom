@@ -8,7 +8,7 @@ use App\Http\Controllers\AppController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', fn () => auth()->check() ? redirect()->route('dashboard') : redirect()->route('login'));
+Route::get('/', fn () => auth()->check() ? redirect()->route('dashboard') : view('welcome'))->name('home');
 
 // ---------------------------------------------------------------- sudah login
 Route::middleware('auth')->group(function () {

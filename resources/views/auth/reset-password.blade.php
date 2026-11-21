@@ -1,39 +1,39 @@
-<x-guest-layout>
-    <form method="POST" action="{{ route('password.store') }}">
-        @csrf
+@extends('layouts.smartroom-guest')
 
-        <!-- Password Reset Token -->
+@section('title', 'Password baru')
+
+@section('content')
+<div class="login-screen">
+    <div class="login-brand">
+        <a href="{{ url('/') }}" aria-label="Kembali ke halaman depan SmartRoom"><img class="login-logo" src="{{ asset('img/logo.png') }}" alt="SmartRoom — Ruang Cerdas, Hidup Lebih Nyaman" width="900" height="233"></a>
+        <h1 class="sr-only">Password baru</h1>
+        <span>Buat password baru untuk akunmu.</span>
+    </div>
+
+    <form class="login-form" method="POST" action="{{ route('password.store') }}" novalidate data-submit-busy>
+        @csrf
         <input type="hidden" name="token" value="{{ $request->route('token') }}">
 
-        <!-- Email Address -->
-        <div>
-            <x-input-label for="email" :value="__('Email')" />
-            <x-text-input id="email" class="block mt-1 w-full" type="email" name="email" :value="old('email', $request->email)" required autofocus autocomplete="username" />
-            <x-input-error :messages="$errors->get('email')" class="mt-2" />
-        </div>
+        <label>
+            Alamat email
+            <input type="email" name="email" value="{{ old('email', $request->email) }}" autocomplete="email" inputmode="email" required
+                   @error('email') aria-invalid="true" @enderror>
+            @error('email') <span class="field-error">{{ $message }}</span> @enderror
+        </label>
 
-        <!-- Password -->
-        <div class="mt-4">
-            <x-input-label for="password" :value="__('Password')" />
-            <x-text-input id="password" class="block mt-1 w-full" type="password" name="password" required autocomplete="new-password" />
-            <x-input-error :messages="$errors->get('password')" class="mt-2" />
-        </div>
+        <label>
+            Password baru
+            <input type="password" name="password" placeholder="Minimal 8 karakter" autocomplete="new-password" autofocus required
+                   @error('password') aria-invalid="true" @enderror>
+            @error('password') <span class="field-error">{{ $message }}</span> @enderror
+        </label>
 
-        <!-- Confirm Password -->
-        <div class="mt-4">
-            <x-input-label for="password_confirmation" :value="__('Confirm Password')" />
+        <label>
+            Ulangi password baru
+            <input type="password" name="password_confirmation" placeholder="Ketik ulang password" autocomplete="new-password" required>
+        </label>
 
-            <x-text-input id="password_confirmation" class="block mt-1 w-full"
-                                type="password"
-                                name="password_confirmation" required autocomplete="new-password" />
-
-            <x-input-error :messages="$errors->get('password_confirmation')" class="mt-2" />
-        </div>
-
-        <div class="flex items-center justify-end mt-4">
-            <x-primary-button>
-                {{ __('Reset Password') }}
-            </x-primary-button>
-        </div>
+        <button class="login-button" type="submit">Simpan password baru</button>
     </form>
-</x-guest-layout>
+</div>
+@endsection

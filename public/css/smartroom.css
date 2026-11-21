@@ -1,19 +1,19 @@
-/* SmartRoom — gaya mengikuti desain Figma (teal #0f766e, biru tua #1e3a8a, aksen kuning #fbbf24).
+/* SmartRoom — gaya mengikuti desain Figma (hijau daun #2f7a4b, hijau tua #0c2a20, aksen oranye #f59e0b — selaras dengan logo).
    Tampilan HP: satu kolom dengan navigasi bawah. Tampilan laptop (>= 900px): sidebar + konten lebar. */
 
 :root {
-  --primary-50: #f0fdfa;
-  --primary-600: #0f766e;
-  --primary-800: #115e59;
-  --secondary-900: #1e3a8a;
+  --primary-50: #eef6ea;
+  --primary-600: #2f7a4b;
+  --primary-800: #0a3b2c;
+  --secondary-900: #0c2a20;
   --accent-400: #fbbf24;
   --accent-500: #f59e0b;
-  --neutral-50: #f8fafc;
-  --neutral-100: #f1f5f9;
-  --neutral-200: #e2e8f0;
-  --neutral-500: #64748b;
-  --neutral-700: #374151;
-  --neutral-900: #111827;
+  --neutral-50: #f6f9f5;
+  --neutral-100: #eef3ec;
+  --neutral-200: #d9e3d7;
+  --neutral-500: #5c6e64;
+  --neutral-700: #3b4d43;
+  --neutral-900: #0f1f18;
   --white: #ffffff;
   --success-text: #15803d;
   --success-bg: #dcfce7;
@@ -22,11 +22,11 @@
   --warning-bg: #fef3c7;
   --error-text: #b91c1c;
   --error-bg: #fee2e2;
-  --info-text: #1d4ed8;
-  --info-bg: #dbeafe;
-  --info-border: #93c5fd;
-  --primary-border: #99f6e4;
-  --shadow-card: 0 2px 8px rgb(15 23 42 / 0.08);
+  --info-text: #1f5b38;
+  --info-bg: #e4efdd;
+  --info-border: #b7d4a8;
+  --primary-border: #c3dcb4;
+  --shadow-card: 0 2px 8px rgb(10 59 44 / 0.08);
   --nav-height: 78px;
   color: var(--neutral-900);
   background: var(--neutral-100);
@@ -134,6 +134,7 @@ h1, h2, h3, strong, .sensor-card > strong, .chart-title strong, .device-summary 
 .login-button:disabled { background: var(--neutral-500); cursor: wait; }
 .auth-message { margin: 0; padding: 10px 12px; border-left: 4px solid var(--error-text); border-radius: 8px; background: var(--error-bg); color: var(--error-text); font-size: 14px; line-height: 20px; }
 .auth-message.success { border-color: var(--success-text); background: var(--success-bg); color: var(--success-text); }
+.forgot-link { justify-self: end; margin-top: -6px; padding: 6px 0; color: var(--primary-800); font-size: 14px; line-height: 20px; text-decoration: underline; text-underline-offset: 3px; }
 .register-link { display: block; margin: 14px auto 0; padding: 12px; color: var(--neutral-700); font-size: 14px; line-height: 20px; text-align: center; text-decoration: none; }
 .register-link strong { color: var(--primary-800); font-family: inherit; font-weight: 500; text-decoration: underline; text-underline-offset: 3px; }
 
@@ -281,7 +282,7 @@ h1, h2, h3, strong, .sensor-card > strong, .chart-title strong, .device-summary 
 .compact-recommendation .compact-reason { color: var(--neutral-500); font-size: 13px; line-height: 18px; }
 .recommendation-card { padding: 16px; }
 .recommendation-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.number-box { display: grid; width: 40px; height: 40px; flex: 0 0 auto; place-items: center; border-radius: 10px; background: var(--info-bg); color: var(--secondary-900); font-size: 14px; line-height: 20px; font-weight: 500; }
+.number-box { display: grid; width: 40px; height: 40px; flex: 0 0 auto; place-items: center; border-radius: 10px; background: var(--primary-50); color: var(--secondary-900); font-size: 14px; line-height: 20px; font-weight: 500; }
 .recommendation-card h2 { margin: 14px 0 6px; color: var(--secondary-900); font-size: 22px; line-height: 28px; }
 .recommendation-card > p { margin: 0; color: var(--neutral-700); font-size: 16px; line-height: 24px; }
 .explain-box { margin-top: 14px; padding: 12px; border-radius: 10px; background: var(--info-bg); }

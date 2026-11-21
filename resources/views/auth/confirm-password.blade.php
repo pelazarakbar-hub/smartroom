@@ -1,27 +1,26 @@
-<x-guest-layout>
-    <div class="mb-4 text-sm text-gray-600">
-        {{ __('This is a secure area of the application. Please confirm your password before continuing.') }}
+@extends('layouts.smartroom-guest')
+
+@section('title', 'Konfirmasi password')
+
+@section('content')
+<div class="login-screen">
+    <div class="login-brand">
+        <a href="{{ url('/') }}" aria-label="Kembali ke halaman depan SmartRoom"><img class="login-logo" src="{{ asset('img/logo.png') }}" alt="SmartRoom — Ruang Cerdas, Hidup Lebih Nyaman" width="900" height="233"></a>
+        <h1 class="sr-only">Konfirmasi password</h1>
+        <span>Ini area aman. Masukkan password untuk melanjutkan.</span>
     </div>
 
-    <form method="POST" action="{{ route('password.confirm') }}">
+    <form class="login-form" method="POST" action="{{ route('password.confirm') }}" novalidate data-submit-busy>
         @csrf
 
-        <!-- Password -->
-        <div>
-            <x-input-label for="password" :value="__('Password')" />
+        <label>
+            Password
+            <input type="password" name="password" placeholder="Masukkan password" autocomplete="current-password" autofocus required
+                   @error('password') aria-invalid="true" @enderror>
+            @error('password') <span class="field-error">{{ $message }}</span> @enderror
+        </label>
 
-            <x-text-input id="password" class="block mt-1 w-full"
-                            type="password"
-                            name="password"
-                            required autocomplete="current-password" />
-
-            <x-input-error :messages="$errors->get('password')" class="mt-2" />
-        </div>
-
-        <div class="flex justify-end mt-4">
-            <x-primary-button>
-                {{ __('Confirm') }}
-            </x-primary-button>
-        </div>
+        <button class="login-button" type="submit">Konfirmasi</button>
     </form>
-</x-guest-layout>
+</div>
+@endsection

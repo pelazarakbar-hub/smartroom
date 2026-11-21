@@ -27,6 +27,10 @@
             @error('password') <span class="field-error">{{ $message }}</span> @enderror
         </label>
 
+        @if (Route::has('password.request'))
+            <a class="forgot-link" href="{{ route('password.request') }}">Lupa password?</a>
+        @endif
+
         @if (session('status'))
             <p class="auth-message success" role="status">{{ session('status') }}</p>
         @endif
